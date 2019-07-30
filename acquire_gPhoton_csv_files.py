@@ -45,3 +45,4 @@ if __name__ == '__main__':
                 print(msg, end=' '*buffer, flush=True)
                 msg_len = len(msg)
                 collected_data.append(row)
+        print('='*100)

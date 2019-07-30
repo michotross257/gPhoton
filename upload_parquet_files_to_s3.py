@@ -17,8 +17,10 @@ sess = boto3.Session(region_name=args.region,
 client = sess.client('s3')
 
 for file in os.listdir(args.folder):
-	command = ['aws', 's3', 'cp',
-               os.path.join(args.folder, file),
-               's3://{}'.format(os.path.join(args.bucket, file)),
-               '--profile', args.profile]
+	command = [
+        'aws', 's3', 'cp',
+        os.path.join(args.folder, file),
+        's3://{}'.format(os.path.join(args.bucket, file)),
+        '--profile', args.profile
+    ]
 	subprocess.run(command)

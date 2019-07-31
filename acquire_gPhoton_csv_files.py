@@ -16,7 +16,7 @@ args = parser.parse_args()
 header = [       'zoneID',     'time',        'cx',        'cy',         'cz',        'x',           'y',         'xa',
                    'ya',        'q',          'xi',        'eta',        'ra',       'dec',         'flag']
 header_dtypes = [np.int32,    np.int64,    np.float64,   np.float64,  np.float64,  np.float64,    np.float64,   np.int16,
-                 np.int16,    np.int16,    np.float64,   np.float64,  np.float64,  np.float64,    np.int8]
+                 np.int16,    np.int16,    np.float64,   np.float64,  np.float64,  np.float64,    np.int8                ]
 
 def mp_content_download(file_names):
     '''

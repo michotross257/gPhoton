@@ -13,12 +13,15 @@ parser = argparse.ArgumentParser(description='Get path to TXT file containing na
 parser.add_argument('txt_file', help='Path to TXT file.')
 parser.add_argument('save_path', help='Path to folder where to save PARQUET files.')
 args = parser.parse_args()
-header = ['zoneID', 'time', 'cx', 'cy', 'cz', 'x', 'y', 'xa', 'ya', 'q', 'xi', 'eta', 'ra', 'dec', 'flag']
+header = [       'zoneID',     'time',        'cx',        'cy',         'cz',        'x',           'y',         'xa',
+                   'ya',        'q',          'xi',        'eta',        'ra',       'dec',         'flag']
+header_dtypes = [np.int32,    np.int64,    np.float64,   np.float64,  np.float64,  np.float64,    np.float64,   np.int16,
+                 np.int16,    np.int16,    np.float64,   np.float64,  np.float64,  np.float64,    np.int8]
 
 def mp_content_download(file_names):
     '''
         Uses multiprocessing module to download CSVs and incrementally create parquet
-        files from the files.
+        files from the CSV files.
         
         Parameters
         ----------
@@ -30,7 +33,7 @@ def mp_content_download(file_names):
         None
     '''
     for file_name in file_names:
-        print('\nDownloading content from: {}'.format(file_name))
+        print('Downloading content from: {}'.format(file_name))
         # ----- lazy -----
         downloaded_csv = requests.get(file_name, stream=True)
         lines = (line.decode('utf-8') for line in downloaded_csv.iter_lines())
@@ -39,23 +42,19 @@ def mp_content_download(file_names):
         content_length = int(downloaded_csv.headers['Content-Length'])
         max_size = int(content_length/np.ceil(content_length/1e+7))
         collected_data = []
-        msg_len = 0
         inc = 0
         for cnt, row in enumerate(reader):
             if sys.getsizeof(collected_data) >= max_size:
                 path = os.path.join(args.save_path, file_name.split('/')[-1].replace('csv', '') + str(inc).zfill(2) + '.parquet')
-                print('\nGenerating DataFrame and writing Parquet file to {}'.format(path))
+                print('Generating DataFrame and writing Parquet file to {}'.format(path))
                 df = pd.DataFrame(collected_data, columns=header)
+                for i in range(len(header)):
+                    df[header[i]] = df[header[i]].astype(header_dtypes[i])
                 tbl = pa.Table.from_pandas(df)
                 pq.write_table(tbl, path, compression='snappy')
                 collected_data = []
                 inc += 1
             else:
-                #msg = '\rReading row #{:,}'.format(cnt)
-                #buffer = msg_len - len(msg)
-                #buffer = buffer if buffer > 0 else 0
-                #print(msg, end=' '*buffer, flush=True)
-                #msg_len = len(msg)
                 collected_data.append(row)
 
 if __name__ == '__main__':

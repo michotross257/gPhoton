@@ -14,7 +14,7 @@ parser.add_argument('txt_file', help='Path to TXT file.')
 parser.add_argument('save_path', help='Path to folder where to save PARQUET files.')
 args = parser.parse_args()
 header = [       'zoneID',     'time',        'cx',        'cy',         'cz',        'x',           'y',         'xa',
-                   'ya',        'q',          'xi',        'eta',        'ra',       'dec',         'flag']
+                   'ya',        'q',          'xi',        'eta',        'ra',       'dec',         'flag'              ]
 header_dtypes = [np.int32,    np.int64,    np.float64,   np.float64,  np.float64,  np.float64,    np.float64,   np.int16,
                  np.int16,    np.int16,    np.float64,   np.float64,  np.float64,  np.float64,    np.int8                ]
 

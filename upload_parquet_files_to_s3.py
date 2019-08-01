@@ -35,7 +35,9 @@ def file_upload(file_names):
             's3://{}'.format(os.path.join(args.bucket, file)),
             '--profile', args.profile
         ]
-        subprocess.run(command)
+        output = subprocess.run(command, capture_output=True, text=True)
+        print(output.stdout)
+        #subprocess.run(command)
 
 if __name__ == '__main__':
     sess = boto3.Session(region_name=args.region,
@@ -50,7 +52,7 @@ if __name__ == '__main__':
         for index in range(mp.cpu_count()):
             start, stop = processing_segments[index], processing_segments[index+1]
             processes.append(mp.Process(target=file_upload,
-                                        args=(files[start: stop])))
+                                        args=(files[start: stop],)))
         [p.start() for p in processes]
         [p.join() for p in processes]
     else:

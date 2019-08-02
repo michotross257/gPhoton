@@ -37,7 +37,6 @@ def file_upload(file_names):
         ]
         output = subprocess.run(command, capture_output=True, text=True)
         print(output.stdout)
-        #subprocess.run(command)
 
 if __name__ == '__main__':
     sess = boto3.Session(region_name=args.region,

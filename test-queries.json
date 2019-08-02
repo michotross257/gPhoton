@@ -1,0 +1,16 @@
+{
+  "1": [
+      "SELECT COUNT(*)",
+      "FROM {};"
+  ],
+  "2": [
+      "SELECT MIN(ra) AS ra_min, MAX(ra) AS ra_max, MIN(dec) AS dec_min, MAX(dec) AS dec_max",
+      "FROM {};"
+  ],
+  "3": [
+      "SELECT *",
+      "FROM {}",
+      "WHERE ra BETWEEN {}-(30/3600.0) AND {}+(30/3600.0)",
+      "AND dec BETWEEN {}-(30/3600.0) AND {}+(30/3600.0);"
+  ]
+}

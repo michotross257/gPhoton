@@ -5,15 +5,18 @@ import subprocess
 import argparse
 import numpy as np
 
-parser = argparse.ArgumentParser(description='Get AWS info and directory of PARQUET files.')
+parser = argparse.ArgumentParser(description='Get AWS info and directory of files to uploaded.')
 parser.add_argument('region', help='Name of AWS region.')
 parser.add_argument('-p', '--profile', metavar='', default='default',
                     help='Name of AWS profile (default: "default").')
-parser.add_argument('bucket', help='Name of AWS S3 bucket to which the PARQUET files will be uploaded.')
-parser.add_argument('folder', help='Path to folder where PARQUET files are stored.')
+parser.add_argument('bucket', help='Name of AWS S3 bucket to which the files will be uploaded.')
+parser.add_argument('folder', help='Path to folder where files to be uploaded are stored.')
+parser.add_argument('extensions',
+                    help='Comma separated list of acceptable extensions of files to be uploaded to S3.')
 parser.add_argument('-m', '--multiprocessing', action='store_true',
                     help='Whether to use multiprocessing to do the upload.')
 args = parser.parse_args()
+extensions = [extension.strip() for extension in args.extensions.split(',')]
 
 def file_upload(file_names):
     '''
@@ -44,7 +47,7 @@ if __name__ == '__main__':
     client = sess.client('s3')
 
     files = sorted(os.listdir(args.folder))
-    files = list(filter(lambda x: x.endswith('parquet'), files))
+    files = list(filter(lambda file: any([file.endswith(extension) for extension in extensions]), files))
     if args.multiprocessing:
         processing_segments = np.linspace(0, len(files), mp.cpu_count()+1).astype(int)
         processes = []

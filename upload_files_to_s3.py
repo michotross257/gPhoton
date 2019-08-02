@@ -6,11 +6,14 @@ import argparse
 import numpy as np
 
 parser = argparse.ArgumentParser(description='Get AWS info and directory of files to uploaded.')
-parser.add_argument('region', help='Name of AWS region.')
+parser.add_argument('region',
+                    help='Name of AWS region.')
 parser.add_argument('-p', '--profile', metavar='', default='default',
                     help='Name of AWS profile (default: "default").')
-parser.add_argument('bucket', help='Name of AWS S3 bucket to which the files will be uploaded.')
-parser.add_argument('folder', help='Path to folder where files to be uploaded are stored.')
+parser.add_argument('bucket',
+                    help='Name of AWS S3 bucket to which the files will be uploaded.')
+parser.add_argument('folder',
+                    help='Path to folder where files to be uploaded are stored.')
 parser.add_argument('extensions',
                     help='Comma separated list of acceptable extensions of files to be uploaded to S3.')
 parser.add_argument('-m', '--multiprocessing', action='store_true',

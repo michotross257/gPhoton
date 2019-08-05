@@ -66,6 +66,17 @@ if __name__ == '__main__':
                 'EXECUTION_START_TIME':
                     {"S": start_time}
             }
+            if query == 3:
+                item.update({
+                    'RA_MIN':
+                        {"S": str(args.ramin)},
+                    'RA_MAX':
+                        {"S": str(args.ramax)},
+                    'DEC_MIN':
+                        {"S": str(args.decmin)},
+                    'DEC_MAX':
+                        {"S": str(args.decmax)}
+                })
             dynamodb_client.put_item(TableName=args.table, Item=item)
             print('Query #{} for table {}'.format(query, table))
             print('Query Execution ID: {}\n'.format(response['QueryExecutionId']))

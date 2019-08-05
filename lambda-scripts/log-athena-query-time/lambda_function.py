@@ -21,8 +21,8 @@ def lambda_handler(event, context):
         },
         UpdateExpression='SET EXECUTION_END_TIME = :et',
         ExpressionAttributeValues={
-            ":et": {
-                'S': str(end_time)
+            ':et': {
+                'S': end_time
             }
         }
     )

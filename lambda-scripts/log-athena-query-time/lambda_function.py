@@ -8,8 +8,7 @@ region_name = os.environ.get('REGION_NAME')
 client = boto3.client('dynamodb')
 
 def lambda_handler(event, context):
-    end_time = datetime.now(timezone.utc)
-    end_time = end_time.strftime('%H:%M:%S.%f %p %Z')
+    end_time = datetime.now(timezone.utc).isoformat(timespec='microseconds')
     key = event['Records'][0]['s3']['object']['key']
     execution_id = key.split('/')[-1].replace('.csv', '')
     client.update_item(

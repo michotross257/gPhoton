@@ -57,14 +57,14 @@ if __name__ == '__main__':
                             },
                             WorkGroup=args.workgroup
                         )
-            start_time = datetime.now(timezone.utc)
+            start_time = datetime.now(timezone.utc).isoformat(timespec='microseconds')
             item = {
                 'EXECUTION_ID':
                     {"S": response['QueryExecutionId']},
                 'QUERY_ID':
                     {"S": str(query)},
                 'EXECUTION_START_TIME':
-                    {"S": start_time.strftime('%H:%M:%S.%f %p %Z')}
+                    {"S": start_time}
             }
             dynamodb_client.put_item(TableName=args.table, Item=item)
             print('Query #{} for table {}'.format(query, table))

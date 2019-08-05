@@ -1,6 +1,7 @@
 import boto3
 import json
 from functools import reduce
+from collections import OrderedDict
 from datetime import datetime, timezone
 import argparse
 
@@ -10,7 +11,7 @@ parser.add_argument('-p', '--profile', default='default', metavar='',
                     help='Name of the AWS profile to use (default="default").')
 parser.add_argument('region', help='Name of AWS region.')
 parser.add_argument('database', help='Name of Athena Database containing the table to query.')
-parser.add_argument('tables', help='Comma separated list of Athena tables to query.')
+parser.add_argument('tables', help='Comma separated list of Athena table(s) to query.')
 parser.add_argument('workgroup', help='Name of Athena workgroup.')
 parser.add_argument('output_location', help='S3 location where to save query results.')
 parser.add_argument('table', help='Name of the DynamoDB table to write to.')
@@ -35,20 +36,19 @@ if __name__ == '__main__':
         queries = query_file.read()
     queries = json.loads(queries)
     queries = {int(key): reduce(lambda x, y: x+'\n'+y, queries[key]) for key in queries}
-
+    query_args = {
+        1: OrderedDict(zip(['TABLE_ID'],
+                           [   None   ])),
+        2: OrderedDict(zip(['TABLE_ID'],
+                           [   None   ])),
+        3: OrderedDict(zip(['TABLE_ID',  'RA_MIN' ,  'RA_MAX' ,  'DEC_MIN' ,  'DEC_MAX' ],
+                           [   None   , args.ramin, args.ramax, args.decmin, args.decmax]))
+    }
     for query in queries:
         for table in tables:
-            query_args = {
-                1: (table,),
-                2: (table,),
-                3: (table,
-                    args.ramin,
-                    args.ramax,
-                    args.decmin,
-                    args.decmax)
-            }
+            query_args[query]['TABLE_ID'] = table
             response = athena_client.start_query_execution(
-                            QueryString=queries[query].format(*query_args[query]),
+                            QueryString=queries[query].format(*query_args[query].values()),
                             QueryExecutionContext={
                                 'Database': args.database
                             },
@@ -66,17 +66,8 @@ if __name__ == '__main__':
                 'EXECUTION_START_TIME':
                     {"S": start_time}
             }
-            if query == 3:
-                item.update({
-                    'RA_MIN':
-                        {"S": str(args.ramin)},
-                    'RA_MAX':
-                        {"S": str(args.ramax)},
-                    'DEC_MIN':
-                        {"S": str(args.decmin)},
-                    'DEC_MAX':
-                        {"S": str(args.decmax)}
-                })
+            for key in query_args[query].keys():
+                item[key] = {'S': str(query_args[query][key])}
             dynamodb_client.put_item(TableName=args.table, Item=item)
             print('Query #{} for table {}'.format(query, table))
             print('Query Execution ID: {}\n'.format(response['QueryExecutionId']))

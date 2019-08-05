@@ -30,16 +30,6 @@ if __name__ == '__main__':
     athena_client = sess.client('athena')
     dynamodb_client = sess.client('dynamodb')
     
-    params = {
-        'ra': {
-            'min': args.ramin,
-            'max': args.ramax
-        },
-        'dec': {
-            'min': args.decmin,
-            'max': args.decmax
-        }
-    }
     tables = [tbl.strip() for tbl in args.tables.split(',')]
     with open(args.queries) as query_file:
         queries = query_file.read()
@@ -52,10 +42,10 @@ if __name__ == '__main__':
                 1: (table,),
                 2: (table,),
                 3: (table,
-                    params['ra']['min'],
-                    params['ra']['max'],
-                    params['dec']['min'],
-                    params['dec']['max'])
+                    args.ramin,
+                    args.ramax,
+                    args.decmin,
+                    args.decmax)
             }
             response = athena_client.start_query_execution(
                             QueryString=queries[query].format(*query_args[query]),

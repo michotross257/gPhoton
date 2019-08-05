@@ -10,7 +10,7 @@
   "3": [
       "SELECT *",
       "FROM {}",
-      "WHERE ra BETWEEN {}-(30/3600.0) AND {}+(30/3600.0)",
-      "AND dec BETWEEN {}-(30/3600.0) AND {}+(30/3600.0);"
+      "WHERE ra BETWEEN {} AND {}",
+      "AND dec BETWEEN {} AND {};"
   ]
 }

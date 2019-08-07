@@ -163,11 +163,15 @@ def content_download(file_names):
                     print('\t{} -> {:,} elements, ~{:.4f} MB'.format(_,
                                                                      len(data_collection[_]['data']),
                                                                      sys.getsizeof(data_collection[_]['data'])*1e-6))
-            params = {
-                'zoneID': int(row[0]),
-                'ra': float(row[12]),
-                'dec': float(row[13])
-            }
+            try:
+                params = {
+                    'zoneID': int(row[0]),
+                    'ra': float(row[12]),
+                    'dec': float(row[13])
+                }
+            except:
+                print('\nRow is not the expected length:\n{}\n'.format(row))
+                continue
             path = search_partitions(params)
             path = os.path.join(path, file_name.split('/')[-1].replace('.csv', ''))
             if path not in data_collection:

@@ -103,7 +103,7 @@ if __name__ == '__main__':
                     time.sleep(sleep_time)
                     num_sec_query_has_been_running += sleep_time
                     rsp = athena_client.get_query_execution(QueryExecutionId=response['QueryExecutionId'])
-                    succeeded_query = True if rsp['QueryExecution']['Status']['State'] == 'SUCCEEDED' else False
+                    succeeded_query = True if rsp['QueryExecution']['Status']['State'] == 'SUCCEEDED' else False                    
         print('='*60)
         query_args[3]['RA_MIN'] = query_args[3]['RA_MIN'] + ((query_args[3]['RA_MAX'] - query_args[3]['RA_MIN'])/2)
         query_args[3]['DEC_MIN'] = query_args[3]['DEC_MIN'] + ((query_args[3]['DEC_MAX'] - query_args[3]['DEC_MIN'])/2)

@@ -8,7 +8,7 @@
       "FROM {};"
   ],
   "3": [
-      "SELECT *",
+      "SELECT COUNT(*)",
       "FROM {}",
       "WHERE ra BETWEEN {} AND {}",
       "AND dec BETWEEN {} AND {};"

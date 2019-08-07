@@ -16,6 +16,7 @@ parser.add_argument('save_path', help='Path to folder where to save PARQUET file
 parser.add_argument('-t', '--test', action='store_true',
                     help='To test the search_partitions function. If flagged, only test will be run.')
 args = parser.parse_args()
+
 header = [       'zoneID',     'time',        'cx',        'cy',         'cz',        'x',           'y',         'xa',
                    'ya',        'q',          'xi',        'eta',        'ra',       'dec',         'flag'              ]
 header_dtypes = [np.int32,    np.int64,    np.float64,   np.float64,  np.float64,  np.float64,    np.float64,   np.int16,
@@ -130,10 +131,9 @@ def write_parquet_file(path, data):
 
 
 
-def mp_content_download(file_names):
+def content_download(file_names):
     '''
-        Uses multiprocessing module to download CSVs and incrementally create parquet
-        files from the CSV files.
+        Download CSVs and incrementally create parquet files from the CSV files.
         
         Parameters
         ----------
@@ -193,7 +193,7 @@ if __name__ == '__main__':
     else:
         with open(args.txt_file) as txt_file:
             file_names = list(filter(lambda x: len(x), txt_file.read().split('\n')))
-        mp_content_download(file_names)
+        content_download(file_names)
         '''
         processing_segments = np.linspace(0, len(file_names), mp.cpu_count()+1).astype(int)
         processes = []

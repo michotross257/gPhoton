@@ -20,15 +20,28 @@ def lambda_handler(event, context):
         QueryExecutionId=execution_id
     )
     bytes_scanned = int(response['QueryExecution']['Statistics']['DataScannedInBytes'])
-    
+    start_time = db_client.get_item(
+        TableName=athena_table_id,
+        Key={
+            'EXECUTION_ID':{
+                'S': execution_id
+            }
+        },
+        AttributesToGet=[
+            'EXECUTION_START_TIME'
+        ],
+    )
+    start_time = start_time['Item']['EXECUTION_START_TIME']['S']
+    time_difference = datetime.fromisoformat(end_time) - datetime.fromisoformat(start_time)
+    time_difference = time_difference.seconds + (time_difference.microseconds*1e-6)
     db_client.update_item(
         TableName=athena_table_id,
         Key={
             'EXECUTION_ID':{
-                    'S': execution_id
+                'S': execution_id
             }
         },
-        UpdateExpression='SET EXECUTION_END_TIME=:et, QUERY_COST=:cost, DATA_SCANNED=:data',
+        UpdateExpression='SET EXECUTION_END_TIME=:et, QUERY_COST=:cost, DATA_SCANNED=:data, TIME_ELAPSED_IN_SECONDS=:tm',
         ExpressionAttributeValues={
             ':et': {
                 'S': end_time
@@ -38,6 +51,9 @@ def lambda_handler(event, context):
             },
             ':data': {
                 'S': '{:.10f} GB'.format(bytes_scanned*1e-9)
+            },
+            ':tm': {
+                'S': '{:.6f}'.format(time_difference)
             }
         }
     )

@@ -1,16 +1,28 @@
 {
   "1": [
-      "SELECT COUNT(*)",
-      "FROM {};"
+      "SELECT *",
+      "FROM {}",
+      "WHERE zoneID BETWEEN {} AND {}",
+      "LIMIT 1000000;"
   ],
   "2": [
-      "SELECT MIN(ra) AS ra_min, MAX(ra) AS ra_max, MIN(dec) AS dec_min, MAX(dec) AS dec_max",
-      "FROM {};"
+      "SELECT *",
+      "FROM {}",
+      "WHERE zoneID BETWEEN {} AND {}",
+      "AND dec BETWEEN {} AND {}",
+      "AND ra BETWEEN {} AND {}",
+      "AND ({}*cx + {}*cy + {}*cz) > {}",
+      "AND time >= {} AND time < {}",
+      "AND flag = {};"
   ],
   "3": [
-      "SELECT COUNT(*)",
+      "SELECT COUNT(*) AS item_count",
       "FROM {}",
-      "WHERE ra BETWEEN {} AND {}",
-      "AND dec BETWEEN {} AND {};"
-  ]
+      "WHERE zoneID BETWEEN {} AND {}",
+      "AND dec BETWEEN {} AND {}",
+      "AND ra BETWEEN {} AND {}",
+      "AND ({}*cx + {}*cy + {}*cz) > {}",
+      "AND time >= {} AND time < {}",
+      "AND flag = {};"
+  ],
 }

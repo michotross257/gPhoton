@@ -4,6 +4,7 @@ import re
 import requests
 import csv
 import argparse
+from uuid import uuid4
 import multiprocessing as mp
 import numpy as np
 import pandas as pd
@@ -15,6 +16,8 @@ parser.add_argument('txt_file', help='Path to TXT file.')
 parser.add_argument('save_path', help='Path to folder where to save PARQUET files.')
 parser.add_argument('-t', '--test', action='store_true',
                     help='To test the search_partitions function. If flagged, only test will be run.')
+parser.add_argument('-m', '--multiprocessing', action='store_true',
+                    help='To parallelize the downloads.')
 args = parser.parse_args()
 
 header = [       'zoneID',     'time',        'cx',        'cy',         'cz',        'x',           'y',         'xa',
@@ -23,64 +26,64 @@ header_dtypes = [np.int32,    np.int64,    np.float64,   np.float64,  np.float64
                  np.int16,    np.int16,    np.float64,   np.float64,  np.float64,  np.float64,    np.int8                ]
 ra_max = 360
 ra_factor = 36
-dec_max = 90
-dec_factor = 18
-
 
 def test():
     tests = [
         {
              'zoneID': 10829,
              'ra': 0.0,
-             'dec': -90.0
         },
         {
              'zoneID': 10830,
              'ra': 360.0,
-             'dec': 90.0
+        },
+        {
+             'zoneID': 10829,
+             'ra': 72.0,
         },
         {
              'zoneID': 10831,
              'ra': 45.0,
-             'dec': 0.0
         },
         {
              'zoneID': 10829,
              'ra': 108.0,
-             'dec': -54.0
         },
         {
              'zoneID': 10830,
              'ra': 216.0,
-             'dec': 18.0
         },
         {
              'zoneID': 10831,
              'ra': 359.99999,
-             'dec': 89.99999
         },
         {
              'zoneID': 10829,
              'ra': 83.12345,
-             'dec': -2.09876
         },
         {
              'zoneID': 10830,
              'ra': 258.00001,
-             'dec': 7.8910001
+        },
+        {
+             'zoneID': 10829,
+             'ra': 36,
         }
     ]
 
     expected = [
-        '/Users/mtrossbach/gPhoton/data/partitioned/zoneID=10829/0<=ra<36/-90<=dec<-72',
-        '/Users/mtrossbach/gPhoton/data/partitioned/zoneID=10830/324<=ra<=360/72<=dec<=90',
-        '/Users/mtrossbach/gPhoton/data/partitioned/zoneID=10831/36<=ra<72/0<=dec<18',
-        '/Users/mtrossbach/gPhoton/data/partitioned/zoneID=10829/108<=ra<144/-54<=dec<-36',
-        '/Users/mtrossbach/gPhoton/data/partitioned/zoneID=10830/216<=ra<252/18<=dec<36',
-        '/Users/mtrossbach/gPhoton/data/partitioned/zoneID=10831/324<=ra<=360/72<=dec<=90',
-        '/Users/mtrossbach/gPhoton/data/partitioned/zoneID=10829/72<=ra<108/-18<=dec<0',
-        '/Users/mtrossbach/gPhoton/data/partitioned/zoneID=10830/252<=ra<288/0<=dec<18'
+        'zoneID=10829/0<=ra<36',
+        'zoneID=10830/324<=ra<=360',
+        'zoneID=10829/72<=ra<108',
+        'zoneID=10831/36<=ra<72',
+        'zoneID=10829/108<=ra<144',
+        'zoneID=10830/216<=ra<252',
+        'zoneID=10831/324<=ra<=360',
+        'zoneID=10829/72<=ra<108',
+        'zoneID=10830/252<=ra<288',
+        'zoneID=10829/36<=ra<72',
     ]
+    expected = [os.path.join(args.save_path, e) for e in expected]
 
     for index, test in enumerate(tests):
         result = search_partitions(test)
@@ -94,102 +97,115 @@ def test():
 def search_partitions(params, index=0, path=args.save_path):
     folders = list(filter(lambda x: os.path.isdir(os.path.join(path, x)), os.listdir(path)))
     if index == 0:
-        # ZONE ID
+        # ZONE ID partitions
         fldrs = [int(re.findall('\d+', fldr)[0]) for fldr in folders]
         fldr_index = fldrs.index(params['zoneID'])
         return search_partitions(params=params, index=index+1, path=os.path.join(path, folders[fldr_index]))
     else:
+        # RA partitions
         folders = sorted(folders, key=lambda x: int(re.findall('[-\d]+', x)[0]))
-        if index == 1:
-            # RA
-            if params['ra'] == ra_max:
-                fldr_index = int((params['ra']/ra_factor))-1
-            else:
-                fldr_index = int((params['ra']/ra_factor))
-            return search_partitions(params=params, index=index+1, path=os.path.join(path, folders[fldr_index]))
-        elif index == 2:
-            # DEC
-            if params['dec'] == dec_max:
-                fldr_index = int((params['dec']/dec_factor))-1
-            else:
-                fldr_index = int(np.floor(params['dec']/dec_factor))
-            # shift by the number of partitions under 0
-            fldr_index += 5
-            return os.path.join(path, folders[fldr_index])
+        if params['ra'] == ra_max:
+            fldr_index = int((params['ra']/ra_factor))-1
+        else:
+            fldr_index = int((params['ra']/ra_factor))
+        return os.path.join(path, folders[fldr_index])
 
 
 def write_parquet_file(path, data):
-    save_path = path + '.' + str(data[path]['incrementor']).zfill(2) + '.parquet'
-    print('\tGenerating DataFrame and writing Parquet file to {}'.format(save_path))
+    i = -1
+    while path[i] != '/':
+        i -= 1
+    save_path = os.path.join(path[:i], str(uuid4()) + '.parquet')
+    print('Generating DataFrame and writing Parquet file to {}'.format(save_path))
     df = pd.DataFrame(data[path]['data'], columns=header)
     for i in range(len(header)):
         df[header[i]] = df[header[i]].astype(header_dtypes[i])
-    tbl = pa.Table.from_pandas(df)
+    df = df.sort_values(['ra'])
+    tbl = pa.Table.from_pandas(df, preserve_index=False)
     pq.write_table(tbl,
                    save_path,
                    compression='snappy')
 
-
-
 def content_download(file_names):
     '''
-        Download CSVs and incrementally create parquet files from the CSV files.
+    Download CSVs and incrementally create parquet files from the CSV files.
         
-        Parameters
-        ----------
-        file_names: list
-            name(s) of file(s) to be downloaded by the multiprocessing process
+    Parameters
+    ----------
+    file_names: list
+        name(s) of file(s) to be downloaded
         
-        Returns
-        -------
-        None
+    Returns
+    -------
+    None
     '''
+    
+    num_rows_read = 0
+    num_rows_retained = 0
     data_collection = {}
     for file_name in file_names:
         print('Downloading content from: {}'.format(file_name))
-        # ----- lazy -----
+        # ------------------------------- lazy -------------------------------
         downloaded_csv = requests.get(file_name, stream=True)
         lines = (line.decode('utf-8') for line in downloaded_csv.iter_lines())
         reader = csv.reader(lines, delimiter='|')
-        # ----- lazy -----
-        content_length = int(downloaded_csv.headers['Content-Length'])
-        max_size = int(content_length/np.ceil(content_length/1e+8))
-        print('Maximum file size: ~{:.4f} MB'.format(max_size*1e-6))
+        # ------------------------------- lazy -------------------------------
+        max_size = int(2.5e+7)
+        if not args.multiprocessing:
+            print('Maximum file size: {} MB'.format(int(max_size*1e-6)))
+        root = file_name.split('/')[-1].replace('.csv', '')
         for cnt, row in enumerate(reader):
-            print('\rReading row #{:,}'.format(cnt), end='', flush=True)
+            num_rows_read += 1
+            if not args.multiprocessing:
+                print('\rReading row #{:,}'.format(cnt), end='', flush=True)
             if cnt and cnt % 50000 == 0:
-                print()
+                if not args.multiprocessing:
+                    print()
+                else:
+                    print('Process:', file_name)
                 for _ in data_collection:
-                    print('\t{} -> {:,} elements, ~{:.4f} MB'.format(_,
-                                                                     len(data_collection[_]['data']),
-                                                                     sys.getsizeof(data_collection[_]['data'])*1e-6))
-            try:
-                params = {
-                    'zoneID': int(row[0]),
-                    'ra': float(row[12]),
-                    'dec': float(row[13])
-                }
-            except:
-                print('\nRow is not the expected length:\n{}\n'.format(row))
+                    print('\t{} -> {:,} rows, ~{:.4f} MB'.format(_,
+                                                                 len(data_collection[_]['data']),
+                                                                 sys.getsizeof(data_collection[_]['data'])*1e-6))
+            if None in row:
+                print('\n\nNone type found in row.\n{}'.format(row))
                 continue
+            if len(row) != len(header):
+                print('\n\nRow is not the expected length of {} elements:\n{} elements -> {}\n'.format(len(header),
+                                                                                                       len(row),
+                                                                                                       row))
+                continue
+            else:
+                params = {}
+                for element in ['zoneID', 'ra']:
+                    try:
+                        index = header.index(element)
+                        temp = header_dtypes[index](row[index])
+                        params[element] = temp
+                    except:
+                        print('Value {} for element {} not convertable to dtype {}'.format(row[index],
+                                                                                           element,
+                                                                                           header_dtypes[index].__name__))
+                        continue
+            num_rows_retained += 1
             path = search_partitions(params)
-            path = os.path.join(path, file_name.split('/')[-1].replace('.csv', ''))
+            path = os.path.join(path, root)
             if path not in data_collection:
                 data_collection[path] = {
-                    'incrementor': 0,
                            'data': []
                 }
             if sys.getsizeof(data_collection[path]['data']) >= max_size:
                 write_parquet_file(path, data_collection)
                 data_collection[path]['data'] = []
-                data_collection[path]['incrementor'] += 1
             else:
                 data_collection[path]['data'].append(row)
 
-    for path in data_collection:
-        if len(data_collection[path]['data']):
-            write_parquet_file(path, data_collection)
-
+        for path in data_collection:
+            if len(data_collection[path]['data']):
+                write_parquet_file(path, data_collection)
+        data_collection.clear()
+        
+    return {'num_rows_read': num_rows_read, 'num_rows_retained': num_rows_retained}
 
 if __name__ == '__main__':
     if args.test:
@@ -197,14 +213,19 @@ if __name__ == '__main__':
     else:
         with open(args.txt_file) as txt_file:
             file_names = list(filter(lambda x: len(x), txt_file.read().split('\n')))
-        content_download(file_names)
-        '''
-        processing_segments = np.linspace(0, len(file_names), mp.cpu_count()+1).astype(int)
-        processes = []
-        for index in range(mp.cpu_count()):
-            start, stop = processing_segments[index], processing_segments[index+1]
-            processes.append(mp.Process(target=mp_content_download,
-                                        args=(file_names[start: stop],)))
-        [p.start() for p in processes]
-        [p.join() for p in processes]
-        '''
+        total_num_rows_read = 0
+        total_num_rows_retained = 0
+        if args.multiprocessing:
+            num_processes = os.cpu_count() if len(file_names) >= os.cpu_count() else len(file_names)
+            file_names = [[x] for x in file_names]
+            pool = mp.Pool(processes=num_processes)
+            for result in pool.map(content_download, file_names):
+                total_num_rows_read += result['num_rows_read']
+                total_num_rows_retained += result['num_rows_retained']
+            
+        else:
+            result = content_download(file_names)
+            total_num_rows_read += result['num_rows_read']
+            total_num_rows_retained += result['num_rows_retained']
+        print('\nTotal number of rows read: {}\nTotal number of rows retained: {}'.format(total_num_rows_read,
+                                                                                          total_num_rows_retained))
